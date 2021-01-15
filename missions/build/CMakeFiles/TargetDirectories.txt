@@ -1,0 +1,3 @@
+/home/nvidia/Onboard-SDK-3.9/Onboard-SDK-3.9/sample/platform/linux/missions/build/CMakeFiles/rebuild_cache.dir
+/home/nvidia/Onboard-SDK-3.9/Onboard-SDK-3.9/sample/platform/linux/missions/build/CMakeFiles/edit_cache.dir
+/home/nvidia/Onboard-SDK-3.9/Onboard-SDK-3.9/sample/platform/linux/missions/build/CMakeFiles/djiosdk-mission-sample.dir

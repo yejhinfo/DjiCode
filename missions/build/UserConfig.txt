@@ -1,0 +1,4 @@
+app_id : 1035764
+app_key : 750c69efa0f87cc8c39889a00a1d3e02ccf0f23dabebde3f3288ad87ab3ce9ee
+device : /dev/ttyUSB1
+baudrate : 230400
