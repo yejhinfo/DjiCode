@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>test</title>
+      <script type="text/javascript" src="js/apiv1.3.min.js"></script>
+    <script src="./qwebchannel.js"></script>
+    <!--<script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>-->
+  </head>
+  <body style="background:#282c34;">
+    <h3 style="color:#ffffff;">this is web page</h3>
+    <input type="button" value="C++ function callback" onclick="onShowMsgBox()">
+    <input type="button" value="get your name " onclick="onGetYourName()">
+    <script>
+      new QWebChannel(qt.webChannelTransport, function(channel) {
+        window.bridge = channel.objects.bridge;
+        window.bridge.sigYourName.connect(function(name) {
+          alert(name);
+        });
+      });
+
+      function onShowMsgBox() {
+        bridge.showMsgBox()
+      }
+
+      function onGetYourName() {
+        bridge.getYourName();
+      }
+
+      function showAlert() {
+        alert('this is web alert');
+      }
+
+      function getWindowWidth() {
+        return $(window).width();
+      }
+    </script>
+  </body>
+</html>
