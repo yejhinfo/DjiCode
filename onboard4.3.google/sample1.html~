@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <link href="mapfiles/css/default.css" rel="stylesheet" type="text/css" />
+    <title>Google API离线地图</title>
+    <script type="text/javascript" src="mapapi.js"></script>
+	<script type="text/javascript" src="googleTilesInfo.js"></script>
+	<script type="text/javascript" src="maplabel-compiled.js"></script>
+        <script src="qwebchannel.js"></script>
+    <script type="text/javascript">
+
+        function LocalMapType() { }
+            LocalMapType.prototype.tileSize = new google.maps.Size(256, 256);
+            LocalMapType.prototype.maxZoom = maxZoom;   //地图的最大显示级别
+            LocalMapType.prototype.minZoom = minZoom;   //地图的最小显示级别
+            LocalMapType.prototype.name = "本地地图切片";
+            LocalMapType.prototype.alt = "显示本地地图切片";
+            LocalMapType.prototype.getTile = function (coord, zoom, ownerDocument) {
+                var img = ownerDocument.createElement("img");
+                img.style.width = this.tileSize.width + "px";
+                img.style.height = this.tileSize.height + "px";
+                var strURL = outputPath;   //本地地图切片存放路径
+				strURL += zoom + "/" + coord.x + "/" + coord.y + format;
+
+                img.src = strURL;
+                return img;
+        };
+
+        var localMapType = new LocalMapType();
+
+ 
+
+        function initialize() {
+            var latlng = new google.maps.LatLng(centY,centX);
+            var myOptions = {
+                center: latlng,
+                zoom: minZoom,
+                streetViewControl: false,
+                mapTypeControlOptions: {
+                    mapTypeIds: [
+						google.maps.MapTypeId.ROADMAP,
+						google.maps.MapTypeId.HYBRID,
+						google.maps.MapTypeId.SATELLITE,
+						google.maps.MapTypeId.TERRAIN,
+						'localMap']
+                }
+            };
+            var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+
+            map.mapTypes.set('localMap', localMapType);   //绑定本地地图类型
+            map.setMapTypeId('localMap');    //指定显示本地地图
+          
+
+			// ===创建用户自定义地标===
+			if(pointsStr!=""){
+				var points = pointsStr.split("##");
+				for(var i=0;i<points.length;i++)
+				{
+					var point = points[i];
+					var info = point.split('$');
+					var makerlatlng = new google.maps.LatLng(parseFloat(info[0]), parseFloat(info[1]));
+					
+					var marker = new google.maps.Marker({
+						position: makerlatlng, // 标注点的坐标位置
+						map: map,
+						draggable: false, // 不支持拖动
+						title: info[2] // 标注点的名称
+					});
+					// 使用弹窗显示名称
+					attachInfowindow(marker, info[2]);
+				}
+			}
+       	
+			function attachInfowindow(marker, msg) {
+			   var infowindow = new google.maps.InfoWindow(
+			   { content: msg,
+				 size: new google.maps.Size(50,10)
+			   });
+			   google.maps.event.addListener(marker, 'click', function() {
+				 infowindow.open(map,marker);
+			   });
+                          
+
+			}
+
+
+
+                           google.maps.event.addListener(map,"click",function(event){
+                                 console.log(event.latLng.lat() + ',' + event.latLng.lng());
+                                 alert(event.latLng.lat() + ',' + event.latLng.lng());
+                        }); 
+                         //点击返回坐标值
+
+ 
+
+                       //点击创建标记
+                       google.maps.event.addListener(map,"click",function(event){
+                       var myIcon = { //自定义点图标
+                       url: 'marker_sprite.png', //图标路径
+                       size: new google.maps.Size(25, 50), //图标尺寸
+                       origin: new google.maps.Point(0, 0), //图标原点
+                       anchor: new google.maps.Point(8,30) //图标偏移量
+                        };
+                      //var mySvgIcon = {url: 'icon.svg', size: new google.maps.Size(48, 48)}; //自定义svg格式图标(svg文件内必须设置宽度和高度，而且与google.maps.Size()设置的大小必须保持一致)
+                      //var mySvgIcon = {url: 'data:image/svg+xml;utf-8,<svg width="48" height="48"...', size: new google.maps.Size(48, 48)}; //url也可以是svg的data数据形式
+                        var point = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng()); //创建坐标点
+                        var marker = new google.maps.Marker({ position: point, icon: myIcon }); //创建标记
+                        marker.setMap(map); //把标记添加到地图
+                      
+                        });
+    
+
+			// ===========================
+        }
+    </script>
+</head>
+<body onload="initialize()">
+		<h1 id="title" style="font-size:20px;">Google API离线地图</h1>   
+        <div id="map_canvas" style="width:800;height:600px;"></div>
+</body>
+</html>

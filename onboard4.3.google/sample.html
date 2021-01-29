@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html>  
+    <head>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=yes" />
+        <title>Offline Maps Demo - by lyklinse</title>
+        <script type="text/javascript" src="mapfiles/mapapi.js"></script>
+        <script type="text/javascript" src="qwebchannel.js"></script>
+    <script>
+	   var map;
+           var EARTH_RADIUS = 6378137.0;    //单位M
+           var PI = Math.PI;
+           var PlanMaker = new Array(3);//以数组形式定义规划航线的四个点
+           var PlanNumber = 0;          //已添加的规划点数据
+           var FinshFlag =0;            //规划完成标识
+           var PlanFlag = 'OnePoint';
+           var flightPath;
+           var lineflag;
+           var SendFlag = 0;
+           var SendNumber = 0;
+           var LinePath = new Array();
+           var locate;
+           var LocateFlag=0;
+	   function LocalMapType() {}
+  
+        LocalMapType.prototype.tileSize = new google.maps.Size(256, 256);
+        LocalMapType.prototype.maxZoom = 18;   //地图显示最大级别
+        LocalMapType.prototype.minZoom = 3;    //地图显示最小级别
+        LocalMapType.prototype.name = "本地地图";
+        LocalMapType.prototype.alt = "显示本地地图数据";
+        LocalMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
+            var img = ownerDocument.createElement("img");
+            img.style.width = this.tileSize.width + "px";
+            img.style.height = this.tileSize.height + "px";
+            //地图存放路径
+            //谷歌矢量图 maptile/googlemaps/roadmap
+            //谷歌影像图 maptile/googlemaps/roadmap
+            //MapABC地图 maptile/mapabc/
+			//strURL = "maptile/googlemaps/roadmap/";
+
+                        mapPicDir = "maptile/google/";//瓦片地图路径
+			var curSize = Math.pow(2,zoom);
+            strURL = mapPicDir + zoom + "/" + (coord.x % curSize )+ "/" + (coord.y % curSize)+ ".png";
+			//strURL = "E:/地图文件/谷歌地图中国0-12级googlemaps/googlemaps/roadmap/" + zoom + "/" + (coord.x % curSize )+ "/" + (coord.y % curSize)+ ".PNG";
+
+            img.src = strURL;
+            return img;
+        };
+  
+      var localMapType = new LocalMapType();
+	  
+      function initialize() {
+
+         new QWebChannel(qt.webChannelTransport, function(channel) {
+         window.bridge = channel.objects.bridge;
+         //交互必需
+         });
+
+        var myLatlng = new google.maps.LatLng(23.163133,113.339192);
+        var mapOptions = {
+          zoom: 18,
+          center: myLatlng,
+          mapTypeControlOptions: {
+			mapTypeIds: [
+			google.maps.MapTypeId.ROADMAP,
+			google.maps.MapTypeId.HYBRID,
+			google.maps.MapTypeId.SATELLITE,
+			google.maps.MapTypeId.TERRAIN,
+			'localMap' ]  //定义地图类型
+		  },
+		  panControl: true,
+		  zoomControl: true,
+		  mapTypeControl: true,
+		  scaleControl: true,
+		  streetViewControl: true,
+		  overviewMapControl: true
+        }
+
+
+        map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+        map.mapTypes.set('localMap', localMapType);   //绑定本地地图类型
+        map.setMapTypeId('localMap');    //指定显示本地地图
+        map.setOptions({draggable: true});
+		
+
+        google.maps.event.addListener(
+
+
+          map,"click",function(event){
+          if(PlanFlag == 'OnePoint')
+          {
+            var parliament = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
+            var marker1 = new google.maps.Marker({
+            map:map,
+            draggable:true,
+            animation: google.maps.Animation.DROP,
+            position: parliament
+            });
+            marker1.setMap(map); //把标记添加到地图
+            bridge.getCoordinate(event.latLng.lat(),event.latLng.lng()); // 单点模式下，点击地图，可获取相应点坐标
+          }
+
+          else{
+            if(PlanNumber<4)
+            {
+               var parliament = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
+                PlanMaker[PlanNumber] = new google.maps.Marker({
+               map:map,
+               draggable:true,
+               animation: google.maps.Animation.DROP,
+               position: parliament
+               });
+               PlanMaker[PlanNumber].setMap(map); //把标记添加到地图
+               //alert("plan"+PlanNumber);
+               PlanNumber++;
+
+            }
+            else
+            {
+               alert("planenough");
+            }
+          }
+
+         }
+        ); // add listener
+      }
+
+
+    function showAlert(lon,lan) {
+        if(LocateFlag==1)
+        {
+            locate.setMap(null);
+        }
+        var image = 'images/user.png';
+        var myLatLng4 = new google.maps.LatLng(lan,lon);
+        locate = new google.maps.Marker({
+            position: myLatLng4,
+            map: map,
+            title: '',
+            icon: image
+        });
+        locate.setMap(map); //把标记添加到地图
+        LocateFlag=1;
+
+ }
+
+    // ??? 什么按钮触发的？
+    function plantline(){
+
+    var flightPlanCoordinates = new Array();
+    var i=0;
+    flightPlanCoordinates.push(new google.maps.LatLng(23.163133,113.339192));
+    flightPlanCoordinates.push(new google.maps.LatLng(23.1632,113.339192));
+    flightPlanCoordinates.push(new google.maps.LatLng(23.1632,113.3393));
+    var flightPath = new google.maps.Polyline({
+         path:flightPlanCoordinates,
+         geodesic: true,
+         strokeColor:'#FF0000',
+         strokeOpacity: 1.0,
+         strokeWeight: 2
+    });
+
+     flightPath.setMap(map);
+
+    }
+
+    // 哪个地方触发了？
+    function getdistance1(){
+
+     alert(getDistance(113.339236,23.163108, 113.339102,23.162176));
+    }
+
+
+    function rad(d){
+        return d*PI/180.0;
+    }
+
+    // 获取两个坐标之间的距离
+    function getDistance(lng1, lat1, lng2, lat2) {
+        var radLat1 = rad(lat1);
+        var radLat2 = rad(lat2);
+        var a = radLat1 - radLat2;
+        var b = rad(lng1) - rad(lng2);
+        var s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2)
+                + Math.cos(radLat1) * Math.cos(radLat2)
+                * Math.pow(Math.sin(b / 2), 2)));
+        s = s * EARTH_RADIUS;
+        s = Math.round(s * 10000) / 10000;
+        return s;
+    }
+
+    //  规划模式，选点
+    function PlanModel()
+    {
+       if(PlanFlag == 'OnePoint')
+       {
+          PlanFlag = 'Plan';
+          for(i=0;i<4;i++)
+          {
+          PlanMaker[i]=0;
+          }
+          PlanNumber=0;
+       }
+       else
+       {
+          PlanFlag = 'OnePoint';
+
+       }
+    }
+
+
+    function delay()
+    {
+
+    }
+
+    // 规划航线的函数
+    function PlanStart(interval)
+    {
+
+      if(PlanNumber==4)  // 足够四个点的时候
+      {
+          if(SendFlag==0)  // 发送标志位为0时
+          {
+            if(lineflag==1)   // 需要画线
+            {
+                flightPath.setMap(null);
+                lineflag=0;  // 稍后初始化需要把 画线标志位变为1
+            }
+
+            LinePath.splice(0,LinePath.length);
+            var DeaData1 = new Array();
+            var DeaData2 = new Array();
+            var distance1 = getDistance(PlanMaker[0].position.lng(),PlanMaker[0].position.lat(), PlanMaker[2].position.lng(),PlanMaker[2].position.lat());
+            var distance2 = getDistance(PlanMaker[1].position.lng(),PlanMaker[1].position.lat(), PlanMaker[3].position.lng(),PlanMaker[3].position.lat());
+            var number = Math.min(Math.floor(distance1/interval),Math.floor(distance2/interval));
+            for (i=0;i<number+1;i++)
+            {
+                DeaData1[i] = new google.maps.LatLng(PlanMaker[0].position.lat()+(PlanMaker[2].position.lat()-PlanMaker[0].position.lat())/number*i,PlanMaker[0].position.lng()+(PlanMaker[2].position.lng()-PlanMaker[0].position.lng())/number*i);
+                DeaData2[i] = new google.maps.LatLng(PlanMaker[1].position.lat()+(PlanMaker[3].position.lat()-PlanMaker[1].position.lat())/number*i,PlanMaker[1].position.lng()+(PlanMaker[3].position.lng()-PlanMaker[1].position.lng())/number*i);
+            }
+            DeaData1[number+1] = new google.maps.LatLng(PlanMaker[2].position.lat(),PlanMaker[2].position.lng());
+            DeaData2[number+1] = new google.maps.LatLng(PlanMaker[3].position.lat(),PlanMaker[3].position.lng());
+            if(number%2==0)
+            {
+              LinePath[0] = DeaData1[0];
+              LinePath[(number+1)*2+1] = DeaData1[number+1];
+              LinePath[(number+1)*2] = DeaData2[number+1];
+              LinePath[(number+1)*2-1] = DeaData2[number];
+
+              for(i=0;i<Math.floor((number)/2);i++)
+              {
+                  LinePath[i*4+1] = DeaData2[i*2];
+                  LinePath[i*4+2] = DeaData2[i*2+1];
+                  LinePath[i*4+3] = DeaData1[i*2+1];
+                  LinePath[i*4+4] = DeaData1[i*2+2];
+
+              }
+            }
+            else
+            {
+                LinePath[0] = DeaData1[0];
+                LinePath[(number+1)*2+1] = DeaData2[number+1];
+                for(i=0;i<Math.floor((number+1)/2);i++)
+                {
+                   LinePath[i*4+1] = DeaData2[i*2];
+                   LinePath[i*4+2] = DeaData2[i*2+1];
+                   LinePath[i*4+3] = DeaData1[i*2+1];
+                   LinePath[i*4+4] = DeaData1[i*2+2];
+                }
+            }
+
+            // 规划好的航线变量
+            flightPath = new google.maps.Polyline({
+                path: LinePath,
+                geodesic: true,
+                strokeColor:'#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 2
+            });
+
+            flightPath.setMap(map);  // 把航线画到图上
+            lineflag = 1;
+            SendNumber = 0;
+            //bridge.getMissionPoint(LinePath[SendNumber].lat(),LinePath[SendNumber].lng(),FinshFlag);  // 这个需要更改，此时只获取了第一个点，应该传整个LinePath数组
+            //  添加一个函数，获取sendnumber?
+
+
+            //
+            //SendNumber++;
+
+            SendFlag = 1;  // 直接设为1，就无法发送数组后面的数据了
+
+            // 循环传过去所有的坐标
+            while(SendNumber<=(LinePath.length-1-2))
+            {
+                if(SendNumber==(LinePath.length-1-2))
+                {
+                    FinshFlag = 1;
+                    SendFlag = 0;
+                }
+                bridge.getMissionPoint(LinePath[SendNumber].lat(), LinePath[SendNumber].lng(), FinshFlag);
+                FinshFlag=0;
+                SendNumber++;
+            }
+
+            // FinshFlag = 1;   // 这个要不要注释？
+            //SendFlag = 0;
+
+        }  // send flag
+
+        /*  这个先注释
+        else  // send flag == 1
+        {
+            if(SendNumber>=(LinePath.length-1-2))
+            {
+              FinshFlag = 1;
+              SendFlag = 0;
+            }
+            bridge.getMissionPoint(LinePath[SendNumber].lat(),LinePath[SendNumber].lng(),FinshFlag);
+            FinshFlag=0;
+            SendNumber++;
+        }
+        */
+
+
+
+      } // plan number 
+
+
+      else
+      {
+        alert("point not enough")
+      }
+
+    }
+	</script>
+    </head>
+    
+    <body onload="initialize()">
+		<div id="map_canvas" style="left:0;top:0;width:100%;height:100%;position:absolute;">
+					
+		</div>
+    </body>
+
+</html>

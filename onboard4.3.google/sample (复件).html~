@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html>  
+    <head>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=yes" />
+        <title>Offline Maps Demo - by lyklinse</title>
+        <script type="text/javascript" src="mapfiles/mapapi.js"></script>
+        <script type="text/javascript" src="qwebchannel.js"></script>
+    <script>
+	   var map;
+           var EARTH_RADIUS = 6378137.0;    //单位M
+           var PI = Math.PI;
+           var PlanMaker1,PlanMaker2,PlanMaker3,PlanMaker4;
+           var PlanFlag = 'OnePoint';
+	   function LocalMapType() {}
+  
+        LocalMapType.prototype.tileSize = new google.maps.Size(256, 256);
+        LocalMapType.prototype.maxZoom = 18;   //地图显示最大级别
+        LocalMapType.prototype.minZoom = 3;    //地图显示最小级别
+        LocalMapType.prototype.name = "本地地图";
+        LocalMapType.prototype.alt = "显示本地地图数据";
+        LocalMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
+            var img = ownerDocument.createElement("img");
+            img.style.width = this.tileSize.width + "px";
+            img.style.height = this.tileSize.height + "px";
+            //地图存放路径
+            //谷歌矢量图 maptile/googlemaps/roadmap
+            //谷歌影像图 maptile/googlemaps/roadmap
+            //MapABC地图 maptile/mapabc/
+			//strURL = "maptile/googlemaps/roadmap/";
+
+			mapPicDir = "maptile/google/";
+			var curSize = Math.pow(2,zoom);
+            strURL = mapPicDir + zoom + "/" + (coord.x % curSize )+ "/" + (coord.y % curSize)+ ".png";
+			//strURL = "E:/地图文件/谷歌地图中国0-12级googlemaps/googlemaps/roadmap/" + zoom + "/" + (coord.x % curSize )+ "/" + (coord.y % curSize)+ ".PNG";
+
+            img.src = strURL;
+            return img;
+        };
+  
+      var localMapType = new LocalMapType();
+	  
+      function initialize() {
+
+         new QWebChannel(qt.webChannelTransport, function(channel) {
+         window.bridge = channel.objects.bridge;
+         });
+
+        var myLatlng = new google.maps.LatLng(23.163133,113.339192);
+        var mapOptions = {
+          zoom: 18,
+          center: myLatlng,
+          mapTypeControlOptions: {
+			mapTypeIds: [
+			google.maps.MapTypeId.ROADMAP,
+			google.maps.MapTypeId.HYBRID,
+			google.maps.MapTypeId.SATELLITE,
+			google.maps.MapTypeId.TERRAIN,
+			'localMap' ]  //定义地图类型
+		  },
+		  panControl: true,
+		  zoomControl: true,
+		  mapTypeControl: true,
+		  scaleControl: true,
+		  streetViewControl: true,
+		  overviewMapControl: true
+        }
+
+
+        map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+        map.mapTypes.set('localMap', localMapType);   //绑定本地地图类型
+        map.setMapTypeId('localMap');    //指定显示本地地图
+        map.setOptions({draggable: true});
+		
+
+        google.maps.event.addListener(map,"click",function(event){
+        if(PlanFlag == 'OnePoint')
+        {
+        var parliament = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
+        var marker1 = new google.maps.Marker({
+        map:map,
+        draggable:true,
+        animation: google.maps.Animation.DROP,
+        position: parliament
+        });
+        marker1.setMap(map); //把标记添加到地图
+        bridge.getCoordinate(event.latLng.lat(),event.latLng.lng());
+        }
+        else{
+
+        alert("plan");
+        }
+         });
+
+
+      }
+
+
+   
+
+	</script>
+    </head>
+    
+    <body onload="initialize()">
+		<div id="map_canvas" style="left:0;top:0;width:100%;height:100%;position:absolute;">
+					
+		</div>
+    </body>
+
+</html>
